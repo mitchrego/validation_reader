@@ -1,89 +1,11 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pdf_w;
-import 'package:printing/printing.dart';
+import 'package:validation_reader/validation_rule.dart';
+import 'package:validation_reader/validation_pdf.dart';
 
 void main() {
   runApp(const ValidationReaderApp());
-}
-
-// Model for Validation Rule
-class ValidationRule {
-  final int id;
-  final int version;
-  final String description;
-  final String? errorMessage;
-  final List<String> entityTypeNames;
-  final List<String> changedFieldNames;
-  final bool runOnCreate;
-  final bool runOnUpdate;
-  final bool runOnDelete;
-  final String dslCondition;
-  final int createdByUserId;
-  final bool isEnabled;
-
-  ValidationRule({
-    required this.id,
-    required this.version,
-    required this.description,
-    this.errorMessage,
-    required this.entityTypeNames,
-    required this.changedFieldNames,
-    required this.runOnCreate,
-    required this.runOnUpdate,
-    required this.runOnDelete,
-    required this.dslCondition,
-    required this.createdByUserId,
-    required this.isEnabled,
-  });
-
-  factory ValidationRule.fromJson(Map<String, dynamic> json) {
-    return ValidationRule(
-      id: json['id'] as int,
-      version: json['version'] as int,
-      description: json['description'] as String,
-      errorMessage: json['errorMessage'] as String?,
-      entityTypeNames: List<String>.from(json['entityTypeNames'] as List),
-      changedFieldNames: List<String>.from(json['changedFieldNames'] as List),
-      runOnCreate: json['runOnCreate'] as bool,
-      runOnUpdate: json['runOnUpdate'] as bool,
-      runOnDelete: json['runOnDelete'] as bool,
-      dslCondition: json['dslCondition'] as String,
-      createdByUserId: json['createdByUserId'] as int,
-      isEnabled: json['isEnabled'] as bool,
-    );
-  }
-}
-
-// Service to load and parse validation rules
-class ValidationRulesService {
-  static Future<List<ValidationRule>> loadValidationRulesFromFile(
-      String filePath) async {
-    try {
-      final File file = File(filePath);
-      final String jsonString = await file.readAsString();
-      final Map<String, dynamic> jsonData = jsonDecode(jsonString);
-      final List<dynamic> itemsList = jsonData['items'] as List<dynamic>;
-
-      return itemsList
-          .map((item) => ValidationRule.fromJson(item as Map<String, dynamic>))
-          .toList();
-    } catch (e) {
-      throw Exception('Error loading validation rules: $e');
-    }
-  }
-
-  static List<String> getAllEntityTypes(List<ValidationRule> rules) {
-    final Set<String> entityTypes = {};
-    for (var rule in rules) {
-      entityTypes.addAll(rule.entityTypeNames);
-    }
-    return entityTypes.toList()..sort();
-  }
 }
 
 class ValidationReaderApp extends StatelessWidget {
@@ -166,7 +88,7 @@ class _ValidationRulesScreenState extends State<ValidationRulesScreen> {
       context,
       MaterialPageRoute(
         builder: (context) =>
-            _ValidationRulesPdfPreview(rules: _filteredRules),
+            ValidationRulesPdfPreview(rules: _filteredRules),
       ),
     );
   }
@@ -658,78 +580,6 @@ class ValidationRuleDetailScreen extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _ValidationRulesPdfPreview extends StatelessWidget {
-  final List<ValidationRule> rules;
-
-  const _ValidationRulesPdfPreview({required this.rules});
-
-  Future<Uint8List> _buildPdf(PdfPageFormat format) async {
-    final document = pdf_w.Document();
-
-    document.addPage(
-      pdf_w.MultiPage(
-        pageFormat: format,
-        header: (context) => pdf_w.Container(
-          //margin: const pw.EdgeInsets.only(bottom: 16),
-          child: pdf_w.Row(
-            mainAxisAlignment: pdf_w.MainAxisAlignment.spaceBetween,
-            children: [
-              pdf_w.Text(
-                'Validation Rule Reader',
-                style: pdf_w.TextStyle(
-                  fontSize: 12,
-                  fontWeight: pdf_w.FontWeight.bold,
-                ),
-              ),
-              pdf_w.Text('${rules.length} selected rules'),
-            ],
-          ),
-        ),
-        build: (context) => [
-          pdf_w.Text(
-            'Validation Rules Summary',
-            style: pdf_w.TextStyle(fontSize: 12, fontWeight: pdf_w.FontWeight.bold),
-          ),
-          pdf_w.SizedBox(height: 9),
-          pdf_w.TableHelper.fromTextArray(
-            headers: const ['ID', 'Description', 'Entity Types', 'Status'],
-            data: rules
-                .map(
-                  (rule) => [
-                    rule.id.toString(),
-                    rule.description,
-                    rule.entityTypeNames.join(', '),
-                    rule.isEnabled ? 'Y' : 'N',
-                  ],
-                )
-                .toList(),
-            headerStyle: pdf_w.TextStyle(fontWeight: pdf_w.FontWeight.bold),
-            cellStyle: const pdf_w.TextStyle(fontSize: 9),
-            headerDecoration: const pdf_w.BoxDecoration(color: PdfColors.grey300),
-            cellPadding: const pdf_w.EdgeInsets.all(6),
-          ),
-        ],
-      ),
-    );
-
-    return document.save();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Preview Rules Summary')),
-      body: PdfPreview(
-        build: _buildPdf,
-        allowPrinting: true,
-        allowSharing: true,
-        canChangePageFormat: false,
-        pdfFileName: 'validation-rules-summary.pdf',
       ),
     );
   }
