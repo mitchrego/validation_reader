@@ -43,3 +43,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Validation rule data (client material) - never commit
+assets/validation.json
+*validation*.json
+!web/manifest.json
