@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:validation_reader/validation_rule.dart';
 import 'package:validation_reader/validation_pdf.dart';
@@ -52,13 +51,19 @@ class _ValidationRulesScreenState extends State<ValidationRulesScreen> {
         type: FileType.custom,
         allowedExtensions: ['json'],
         dialogTitle: 'Select Validation Rules JSON File',
+        withData: true,
       );
 
       if (result != null) {
+        final file = result.files.single;
+        final bytes = file.bytes;
+        if (bytes == null) {
+          throw Exception('Could not read file contents');
+        }
         setState(() {
-          _selectedFilePath = result.files.single.path;
+          _selectedFilePath = file.name;
           _rulesFuture =
-              ValidationRulesService.loadValidationRulesFromFile(_selectedFilePath!);
+              ValidationRulesService.loadValidationRulesFromBytes(bytes);
           _selectedEntityType = null;
           _searchQuery = '';
         });
@@ -245,8 +250,7 @@ class _ValidationRulesScreenState extends State<ValidationRulesScreen> {
                           style: TextStyle(fontSize: 12, color: Colors.grey),
                         ),
                         Text(
-                          _selectedFilePath?.split(Platform.pathSeparator).last ??
-                              'No file selected',
+                          _selectedFilePath ?? 'No file selected',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 class ValidationRule {
   final int id;
@@ -49,11 +48,10 @@ class ValidationRule {
 }
 
 class ValidationRulesService {
-  static Future<List<ValidationRule>> loadValidationRulesFromFile(
-      String filePath) async {
+  static Future<List<ValidationRule>> loadValidationRulesFromBytes(
+      List<int> bytes) async {
     try {
-      final File file = File(filePath);
-      final String jsonString = await file.readAsString();
+      final String jsonString = utf8.decode(bytes);
       final Map<String, dynamic> jsonData = jsonDecode(jsonString);
       final List<dynamic> itemsList = jsonData['items'] as List<dynamic>;
 
